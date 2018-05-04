@@ -28,10 +28,6 @@ namespace Microsoft.CognitiveSearch.Skills.Redaction
             dynamic data = await result.Content.ReadAsAsync<dynamic>();
 
             JArray s = data as JArray;
-            //Why doesn't this work? TODO finalize how this is done
-            //double[] scores = s.ToObject<double[]>();
-
-            //HACK
             double score = double.Parse(((JValue)s[0]).Value.ToString().TrimStart('[').TrimEnd(']').Split(',')[1]);
             double prob = score * 100f;
 

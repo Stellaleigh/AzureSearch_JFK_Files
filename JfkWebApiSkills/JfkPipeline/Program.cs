@@ -36,6 +36,7 @@ namespace JfkPipeline
         private static ISearchServiceClient _searchClient;
         private static HttpClient _httpClient = new HttpClient();
         private static string _searchServiceEndpoint;
+        private static string _azureFunctionHostKey;
 
         static void Main(string[] args)
         {
@@ -174,11 +175,15 @@ namespace JfkPipeline
             Console.WriteLine("Creating Skill Set...");
             try
             {
+                if (_azureFunctionHostKey == null)
+                {
+                    _azureFunctionHostKey = await KeyHelper.GetAzureFunctionHostKey(_httpClient);
+                }
                 using (StreamReader r = new StreamReader("skillset.json"))
                 {
                     string json = r.ReadToEnd();
-                    json = json.Replace("[AzureFunctionEndpointUrl]", String.Format("https://{0}", ConfigurationManager.AppSettings["AzureFunctionEndpointUrl"]));
-                    json = json.Replace("[AzureFunctionDefaultHostKey]", ConfigurationManager.AppSettings["AzureFunctionDefaultHostKey"]);
+                    json = json.Replace("[AzureFunctionEndpointUrl]", String.Format("https://{0}.azurewebsites.net", ConfigurationManager.AppSettings["AzureFunctionSiteName"]));
+                    json = json.Replace("[AzureFunctionDefaultHostKey]", _azureFunctionHostKey);
                     json = json.Replace("[BlobContainerName]", BlobContainerNameForImageStore);
                     string uri = String.Format("{0}/skillsets/{1}?api-version=2017-11-11-Preview", _searchServiceEndpoint, SkillSetName);
                     HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -304,13 +309,18 @@ namespace JfkPipeline
             Console.WriteLine("Deploying Website...");
             try
             {
+                string searchQueryKey = ConfigurationManager.AppSettings["SearchServiceQueryKey"];
+                if (_azureFunctionHostKey == null)
+                {
+                    _azureFunctionHostKey = await KeyHelper.GetAzureFunctionHostKey(_httpClient);
+                }
                 string envText = File.ReadAllText("../../../../frontend/.env");
                 envText = envText.Replace("[SearchServiceName]", ConfigurationManager.AppSettings["SearchServiceName"]);
                 envText = envText.Replace("[SearchServiceDomain]", _searchClient.SearchDnsSuffix);
                 envText = envText.Replace("[IndexName]", IndexName);
-                envText = envText.Replace("[SearchServiceApiKey]", ConfigurationManager.AppSettings["SearchServiceQueryKey"]);
-                envText = envText.Replace("[AzureFunctionName]", ConfigurationManager.AppSettings["AzureFunctionEndpointUrl"].Replace(".azurewebsites.net", ""));
-                envText = envText.Replace("[AzureFunctionDefaultHostKey]", ConfigurationManager.AppSettings["AzureFunctionDefaultHostKey"]);
+                envText = envText.Replace("[SearchServiceApiKey]", searchQueryKey);
+                envText = envText.Replace("[AzureFunctionName]", ConfigurationManager.AppSettings["AzureFunctionSiteName"]);
+                envText = envText.Replace("[AzureFunctionDefaultHostKey]", _azureFunctionHostKey);
                 File.WriteAllText("../../../../frontend/.env", envText);
                 if (File.Exists("website.zip"))
                 {

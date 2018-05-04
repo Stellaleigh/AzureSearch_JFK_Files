@@ -211,9 +211,17 @@
             "type": "string",
             "value": "[list(concat('Microsoft.Web/sites/', variables('websiteName'), '/config/publishingcredentials'), '2016-08-01').properties.publishingPassword]"
         },
-        "Azure Function Endpoint Url": {
+        "Azure Function Site Name": {
             "type": "string",
-            "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2016-08-01').defaultHostName]"
+            "value": "[variables('functionAppName')]"
+        },
+        "Azure Function Username": {
+            "type": "string",
+            "value": "[list(concat('Microsoft.Web/sites/', variables('functionAppName'), '/config/publishingcredentials'), '2016-08-01').properties.publishingUserName]"
+        },
+        "Azure Function Password": {
+            "type": "string",
+            "value": "[list(concat('Microsoft.Web/sites/', variables('functionAppName'), '/config/publishingcredentials'), '2016-08-01').properties.publishingPassword]"
         }
     }
 }
